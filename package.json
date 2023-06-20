@@ -78,6 +78,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
+  "homepage":"./nested-draggable-card/",
 
   "browserslist": {
     "production": [
