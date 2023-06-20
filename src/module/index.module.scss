@@ -1,0 +1,132 @@
+.combineAreaMain {
+    height: calc(100vh - 200px);
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  .opStyle {
+    position: absolute;
+    left: -10px;
+    top: -10px;
+    width: 18px;
+    height: 18px;
+    border: 1px solid #3C88F0;
+    text-align: center;
+    color: #3C88F0;
+    background-color: #fff;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .optPopover{
+    width: 20px;
+    background-color: #F7F8FD;
+    text-align: center;
+    border: 1px solid #C4DBFA;
+    border-radius: 4px;
+    .optPopoverItem {
+      height: 18px;
+      color: #333;
+      font-size: 11px;
+      margin-bottom: 1px;
+      cursor: pointer;
+      &:hover{
+        color: #3C88F0;
+      }
+  
+    }
+  }
+  
+  .main{
+    display: flex;
+  }
+  
+  .leftDiv {
+    width: 15px;
+  }
+  
+  .rightDiv {
+    flex: 1;
+    margin-bottom: 8px;
+    padding: 16px;
+    position: relative;
+    border-radius: 8px;
+  
+    .cardMain{
+      .cardMainHeader{
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+  
+        .cardMainHeaderTitle{
+          color:#333;
+          font-size: 14px;
+          font-weight: 500;
+          display: flex;
+  
+          .dragIcon {
+            height: 20px;
+            &:hover{
+            }
+          }
+        }
+        .cardMainHeaderOpt{
+          display: flex;
+          .expand{
+            width: 14px;
+            cursor: pointer;
+            margin-right: 4px;
+            height: 20px;
+            &:hover{
+            }
+          }
+  
+        }
+        .del{
+          cursor: pointer;
+          width: 14px;
+          height: 20px;
+
+
+            &:hover{
+
+            }
+        }
+  
+      }
+      .cardMainDes{
+        color:#999;
+        font-size: 12px;
+  
+      }
+  
+    }
+  }
+  
+  .dragLine{
+    display: flex;
+    width: 100%;
+    .left{
+      width: 2px;
+      height: 2px;
+      border-top: 1px solid #3C88F0;
+      border-right: 1px solid #3C88F0;
+      transform: rotate(45deg);
+      border-radius: 8px;
+  
+  
+    }
+    .center{
+      width: 100%;
+      background-color: #3C88F0;
+      height: 1px;
+      margin-top: 1px;
+    }
+    .right{
+      width: 2px;
+      height: 2px;
+      border-top: 1px solid #3C88F0;
+      border-left: 1px solid #3C88F0;
+      transform: rotate(-45deg);
+      border-radius: 8px;
+    }
+  
+  }
