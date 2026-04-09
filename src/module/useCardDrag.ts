@@ -78,35 +78,15 @@ export const useCardDrag = ({
     },
     collect: (monitor) => ({
       handlerId: monitor.getHandlerId(),
-      isOver: monitor.isOver(),
+      isOver: monitor.isOver({ shallow: true }),
       canDrop: monitor.canDrop(),
     }),
     hover: (item: DragItem, monitor) => {
       if (item.isGroup) return;
 
-      // Prevent level 2 cards from showing top feedback when level 1 item is dragged to top
-      // This prevents double visual feedback in nested scenarios
-      if (item.level === 1 && level === 2) {
-        const hoverBoundingRect = ref.current?.getBoundingClientRect();
-        if (!hoverBoundingRect) return;
-
-        const dragOffset = monitor.getDifferenceFromInitialOffset();
-        if (!dragOffset) return;
-
-        const floatItemY = dragOffset.y + (item.dragBoundingRect?.top || 0);
-        const hoverMiddleY =
-          (hoverBoundingRect.top + hoverBoundingRect.bottom) / 2;
-        const isInserTop = floatItemY < hoverMiddleY;
-
-        // If level 1 item is at top of level 2, skip hover update
-        // Let the parent (group) handle it
-        if (isInserTop) {
-          console.log(
-            "SKIP HOVER: Level 1 item to top of level 2 - let parent handle"
-          );
-          return;
-        }
-      }
+      // Only process hover if this is a shallow (direct) match, not from nested children
+      const isShallowMatch = monitor.isOver({ shallow: true });
+      if (!isShallowMatch) return;
 
       const hoverBoundingRect = ref.current?.getBoundingClientRect();
       if (!hoverBoundingRect) return;
@@ -119,10 +99,24 @@ export const useCardDrag = ({
         (hoverBoundingRect.top + hoverBoundingRect.bottom) / 2;
       const isInserTop = floatItemY < hoverMiddleY;
 
+      console.log("HOVER UPDATE:", {
+        itemId: item.id,
+        itemLevel: item.level,
+        targetId: data.id,
+        targetLevel: level,
+        isGroup,
+        isInserTop,
+        isShallowMatch,
+        timestamp: new Date().toISOString(),
+      });
+
       setIsInsertTop(isInserTop);
       item.isUpDrag = isInserTop;
     },
-    drop: (item: DragItem) => {
+    drop: (item: DragItem, monitor) => {
+      // Only process drop if this is a shallow (direct) match, not from nested children
+      if (!monitor.isOver({ shallow: true })) return;
+
       const targetChildren = data?.children;
       const targetHasChildren =
         Array.isArray(targetChildren) && targetChildren.length > 0;
@@ -137,15 +131,6 @@ export const useCardDrag = ({
       // Update the item to ensure it has the correct isUpDrag value
       item.isUpDrag = isUpDragValue;
 
-      // IMPORTANT: Level 1 item dragging to top of level 2 card should be handled by parent
-      // This prevents double-handling when dragging above a nested card
-      if (item.level === 1 && level === 2 && isUpDragValue) {
-        console.log(
-          "SKIP DROP: Level 1 item to top of level 2 - let parent handle"
-        );
-        return;
-      }
-
       // Debug logs
       console.log("DROP EVENT:", {
         draggedCardId: item.id,
@@ -159,6 +144,7 @@ export const useCardDrag = ({
         isUpDragValue,
         idx,
         timestamp: new Date().toISOString(),
+        isDirectTarget: monitor.isOver({ shallow: true }),
       });
 
       // Check if a level 2 card is being dragged OUT of this group
