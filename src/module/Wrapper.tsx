@@ -47,6 +47,14 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
         hoverItem.level === 2 &&
         hoverItem.isGroup === true;
 
+      // NEW: detect when moving level 2 item out of group to below the group at level 1
+      // This is when user drags from inside group and drops below the group
+      const isMovingL2OutOfGroupToLevel1Below =
+        dragItem.level === 2 &&
+        hoverItem.level === 1 &&
+        hoverItem.isGroup === true &&
+        !dragItem.isUpDrag;
+
       // Debug logging
       console.log("MOVE_CARD_CALLED:", {
         draggedCardId: dragItem.id,
@@ -60,10 +68,13 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
         isSameLevelReordering,
         isMovingOutOfGroup,
         isMovingL1ToGroupViaL2,
+        isMovingL2OutOfGroupToLevel1Below,
         reason: isMovingToGroup
           ? "Moving to group"
           : isMovingL1ToGroupViaL2
           ? "Moving L1 to group via L2"
+          : isMovingL2OutOfGroupToLevel1Below
+          ? "Moving L2 out of group to below it"
           : isSameLevelReordering
           ? "Same level reordering"
           : isMovingOutOfGroup
@@ -152,6 +163,67 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
             });
           } else {
             // If hover item not found, just append
+            res = [...cardsTmp, dragItem.data];
+          }
+        } else {
+          res = cards;
+        }
+      } else if (isMovingL2OutOfGroupToLevel1Below) {
+        // NEW CASE: Moving a level 2 card OUT of its group, positioned BELOW the group
+        // This is extraction combined with positioning below the group
+
+        // Find which group contains this card
+        let groupIndex = -1;
+        let cardIndexInGroup = -1;
+
+        cards.forEach((card, idx) => {
+          const childIndex = card.children?.findIndex(
+            (c) => c.id === dragItem.id
+          );
+          if (childIndex !== undefined && childIndex > -1) {
+            groupIndex = idx;
+            cardIndexInGroup = childIndex;
+          }
+        });
+
+        console.log("ACTION: Extracting L2 to below group", {
+          groupIndex,
+          cardIndexInGroup,
+          targetGroupId: hoverItem.id,
+        });
+
+        if (groupIndex > -1 && cardIndexInGroup > -1) {
+          // Remove from group's children
+          let cardsTmp = update(cards, {
+            [groupIndex]: {
+              children: {
+                $splice: [[cardIndexInGroup, 1]],
+              },
+            },
+          });
+
+          // Auto-delete empty condition groups (type === 4)
+          const groupAfterExtraction = cardsTmp[groupIndex];
+          if (
+            groupAfterExtraction.type === 4 &&
+            (!groupAfterExtraction.children ||
+              groupAfterExtraction.children.length === 0)
+          ) {
+            // Remove the empty condition group
+            cardsTmp = update(cardsTmp, {
+              $splice: [[groupIndex, 1]],
+            });
+          }
+
+          // Insert AFTER the group in root level
+          const groupIdx = cardsTmp.findIndex((c) => c.id === hoverItem.id);
+          if (groupIdx > -1) {
+            // Since isUpDrag is false (we checked in the condition), always insert AFTER
+            res = update(cardsTmp, {
+              $splice: [[groupIdx + 1, 0, dragItem.data]],
+            });
+          } else {
+            // If group not found, just append
             res = [...cardsTmp, dragItem.data];
           }
         } else {

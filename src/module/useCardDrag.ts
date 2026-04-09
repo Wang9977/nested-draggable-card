@@ -152,6 +152,11 @@ export const useCardDrag = ({
       // by checking if item.level === 2 and item is NOT moving to be inside a group
       const isDraggingOutOfGroup = item.level === 2 && !targetIsGroup;
 
+      // NEW: Also check when level 2 item is dragged to below a group (at level 1)
+      // This means extracting from parent group and placing below it
+      const isDraggingOutOfGroupToLevel1Below =
+        item.level === 2 && level === 1 && !isUpDragValue && isGroup;
+
       if (isDraggingOutOfGroup) {
         // Moving from inside group to root level
         console.log("ACTION: Extracting from group");
@@ -161,13 +166,26 @@ export const useCardDrag = ({
           isGroup: false,
           level: 1,
         });
-      } else if (targetIsGroup && !isUpDragValue) {
-        // Move INTO a group if dropping in the lower half (not at top edge)
+      } else if (isDraggingOutOfGroupToLevel1Below) {
+        // Level 2 item dragged below a level 1 group (extracting and placing after group)
+        console.log("ACTION: Extracting from group to below it");
+        onMove(item, {
+          id: data.id,
+          hoverIndex: idx,
+          isGroup: false,
+          level: 1,
+        });
+      } else if (targetIsGroup && !isUpDragValue && item.level === 1) {
+        // Move INTO a group if:
+        // 1. Target is a group
+        // 2. Dropping in the lower half (not at top edge)
+        // 3. The dragged item is level 1 (not already inside a group)
         // This allows merging cards into groups regardless of whether they already have children
         console.log("ACTION: Merging into group (revised)", {
-          reason: "targetIsGroup && !isUpDragValue",
+          reason: "targetIsGroup && !isUpDragValue && item.level === 1",
           targetIsGroup,
           isUpDragValue,
+          itemLevel: item.level,
         });
         onMove(item, {
           id: data.id,
@@ -182,6 +200,7 @@ export const useCardDrag = ({
           targetIsGroup,
           isUpDragValue,
           isDraggingOutOfGroup,
+          itemLevel: item.level,
           targetLevel: item.level === 2 && !targetIsGroup ? 2 : 1,
         });
         const targetLevel = item.level === 2 && !targetIsGroup ? 2 : 1;
