@@ -199,6 +199,7 @@ const Card: React.FC<CardProps> = ({
                   transform: "translateY(-50%)",
                   height: `${cardHeight}px`,
                 }}
+                title={`Feedback: Card ${id} (level ${level})`}
               >
                 <div className={moduleStyle.shadowContent} />
               </div>
