@@ -57,7 +57,12 @@ export const useCardDrag = ({
   const [{ handlerId, isOver, canDrop: canDropState }, drop] = useDrop({
     accept: [ItemTypes.CARD, ItemTypes.GROUP],
     canDrop: (item: DragItem) => {
-      // Prevent dropping groups
+      // Allow groups to be reordered at level 1 (root level)
+      if (item.isGroup && level === 1) {
+        return true;
+      }
+
+      // Prevent dropping groups anywhere else (e.g., inside other groups)
       if (item.isGroup) return false;
 
       // Root level card can be dropped on:
@@ -82,7 +87,8 @@ export const useCardDrag = ({
       canDrop: monitor.canDrop(),
     }),
     hover: (item: DragItem, monitor) => {
-      if (item.isGroup) return;
+      // Allow hover processing for groups at level 1
+      if (item.isGroup && level !== 1) return;
 
       const hoverBoundingRect = ref.current?.getBoundingClientRect();
       if (!hoverBoundingRect) return;
@@ -99,12 +105,31 @@ export const useCardDrag = ({
       item.isUpDrag = isInserTop;
     },
     drop: (item: DragItem, monitor) => {
+      // Handle group-to-group reordering at level 1
+      if (item.isGroup && level === 1) {
+        console.log("DROP EVENT: Group reordering at level 1", {
+          draggedGroupId: item.id,
+          targetGroupId: data.id,
+          isUpDrag: item.isUpDrag,
+        });
+
+        // Use same reordering logic as cards
+        onMove(item, {
+          id: data.id,
+          hoverIndex: idx,
+          isGroup: true,
+          level: 1,
+        });
+        return;
+      }
+
+      // Prevent dropping groups anywhere else
+      if (item.isGroup) return;
+
       const targetChildren = data?.children;
       const targetHasChildren =
         Array.isArray(targetChildren) && targetChildren.length > 0;
       const targetIsGroup = isGroup || targetHasChildren;
-
-      if (item.isGroup) return;
 
       // Use the local isInsertTop state which is the most recent hover state
       // This ensures we have the correct direction even if drop fires at a different time
@@ -128,22 +153,20 @@ export const useCardDrag = ({
         timestamp: new Date().toISOString(),
       });
 
-      // CRITICAL: When a level 1 item is dropped on a level 2 card (inside a group),
-      // we should trigger a merge into the parent group, NOT reorder at level 2
-      // This allows inserting level 1 items INSIDE groups, above existing nested cards
-      if (item.level === 1 && level === 2 && isUpDragValue) {
-        // Level 1 item dropped above a level 2 card
-        // This should merge the item INTO the parent group, above this card
+      // When a level 1 item is dropped on/around a level 2 card,
+      // we need to merge it into the parent group.
+      // This handles both above and below cases.
+      if (item.level === 1 && level === 2) {
         console.log(
-          "ACTION: Merging into parent group (level 1 on level 2 top)"
+          `[HANDLE DROP] Level 1 item on level 2 card - merge into parent group`
         );
-
-        // Call with level 2 detail so parent can identify which card to insert before
+        // Call moveCard to trigger the group merge logic
+        // Pass the index of this card as hoverIndex, which will be used to find the position in the group
         onMove(item, {
-          id: data.id, // Reference the level 2 card being hovered
-          hoverIndex: idx, // Position within the group
-          isGroup: true, // Indicate this is going into a group
-          level: 2, // Target is level 2 (inside group)
+          id: data.id,
+          hoverIndex: idx, // Index of the target card in its parent group
+          isGroup: true,
+          level: 2,
         });
         return;
       }
@@ -175,21 +198,20 @@ export const useCardDrag = ({
           isGroup: false,
           level: 1,
         });
-      } else if (targetIsGroup && !isUpDragValue && item.level === 1) {
+      } else if (targetIsGroup && item.level === 1) {
         // Move INTO a group if:
         // 1. Target is a group
-        // 2. Dropping in the lower half (not at top edge)
-        // 3. The dragged item is level 1 (not already inside a group)
-        // This allows merging cards into groups regardless of whether they already have children
-        console.log("ACTION: Merging into group (revised)", {
-          reason: "targetIsGroup && !isUpDragValue && item.level === 1",
+        // 2. The dragged item is level 1 (not already inside a group)
+        // This allows merging cards into groups regardless of drop position
+        console.log("ACTION: Merging into group", {
+          reason: "targetIsGroup && item.level === 1",
           targetIsGroup,
           isUpDragValue,
           itemLevel: item.level,
         });
         onMove(item, {
           id: data.id,
-          hoverIndex: targetChildren?.length || 0,
+          hoverIndex: isUpDragValue ? 0 : targetChildren?.length || 0,
           isGroup: true,
           level: 2,
         });
