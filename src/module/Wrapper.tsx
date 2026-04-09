@@ -63,19 +63,81 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
         }
       } else if (isMovingOutOfGroup) {
         // Moving from group (level 2) to root level (level 1)
-        // First remove from group, then insert at the hover position
-        let cardsTmp = deleteCard(cards, dragItem);
+        // Need to manually remove from group without deleting the group itself
 
-        const hoverIdx = cardsTmp.findIndex((card) => card.id === hoverItem.id);
-        if (hoverIdx > -1) {
-          res = update(cardsTmp, {
-            $splice: [
-              [dragItem?.isUpDrag ? hoverIdx : hoverIdx + 1, 0, dragItem.data],
-            ],
+        console.log("[EXTRACT_FROM_GROUP] Starting extraction");
+        console.log("[EXTRACT_FROM_GROUP] dragItem:", dragItem);
+        console.log("[EXTRACT_FROM_GROUP] hoverItem:", hoverItem);
+        console.log("[EXTRACT_FROM_GROUP] Current cards:", cards);
+
+        // Find which group contains this card
+        let groupIndex = -1;
+        let cardIndexInGroup = -1;
+
+        cards.forEach((card, idx) => {
+          const childIndex = card.children?.findIndex(
+            (c) => c.id === dragItem.id
+          );
+          if (childIndex !== undefined && childIndex > -1) {
+            groupIndex = idx;
+            cardIndexInGroup = childIndex;
+          }
+        });
+
+        console.log(
+          "[EXTRACT_FROM_GROUP] Found at groupIndex:",
+          groupIndex,
+          "cardIndexInGroup:",
+          cardIndexInGroup
+        );
+
+        if (groupIndex > -1 && cardIndexInGroup > -1) {
+          // Remove from group's children
+          let cardsTmp = update(cards, {
+            [groupIndex]: {
+              children: {
+                $splice: [[cardIndexInGroup, 1]],
+              },
+            },
           });
+
+          console.log(
+            "[EXTRACT_FROM_GROUP] After removing from group:",
+            cardsTmp
+          );
+
+          // Insert at hover position in root level
+          const hoverIdx = cardsTmp.findIndex(
+            (card) => card.id === hoverItem.id
+          );
+          console.log(
+            "[EXTRACT_FROM_GROUP] hoverIdx in root:",
+            hoverIdx,
+            "hoverItem.id:",
+            hoverItem.id
+          );
+
+          if (hoverIdx > -1) {
+            res = update(cardsTmp, {
+              $splice: [
+                [
+                  dragItem?.isUpDrag ? hoverIdx : hoverIdx + 1,
+                  0,
+                  dragItem.data,
+                ],
+              ],
+            });
+            console.log("[EXTRACT_FROM_GROUP] After inserting at root:", res);
+          } else {
+            // If hover item not found, just append
+            res = [...cardsTmp, dragItem.data];
+            console.log("[EXTRACT_FROM_GROUP] Appended to root:", res);
+          }
         } else {
-          // If hover item not found, just append
-          res = [...cardsTmp, dragItem.data];
+          res = cards;
+          console.log(
+            "[EXTRACT_FROM_GROUP] Not found in groups, keeping cards as is"
+          );
         }
       } else {
         let cardsTmp = deleteCard(cards, dragItem);
