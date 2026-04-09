@@ -35,7 +35,7 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
         dragItem.level === hoverItem.level &&
         dragItem.level === 1 &&
         dragItem.id !== hoverItem.id;
-      // New: detect when moving from group (level 2) to root level (level 1)
+      // detect when moving from group (level 2) to root level (level 1)
       const isMovingOutOfGroup = isMovingFromGroup && hoverItem.level === 1;
 
       // For same-level reordering, we need to handle it differently to avoid deletion
@@ -63,12 +63,8 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
         }
       } else if (isMovingOutOfGroup) {
         // Moving from group (level 2) to root level (level 1)
-        // Need to manually remove from group without deleting the group itself
-
-        console.log("[EXTRACT_FROM_GROUP] Starting extraction");
-        console.log("[EXTRACT_FROM_GROUP] dragItem:", dragItem);
-        console.log("[EXTRACT_FROM_GROUP] hoverItem:", hoverItem);
-        console.log("[EXTRACT_FROM_GROUP] Current cards:", cards);
+        // Manually remove from group's children to avoid deleteCard logic
+        // that would delete empty groups
 
         // Find which group contains this card
         let groupIndex = -1;
@@ -84,13 +80,6 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
           }
         });
 
-        console.log(
-          "[EXTRACT_FROM_GROUP] Found at groupIndex:",
-          groupIndex,
-          "cardIndexInGroup:",
-          cardIndexInGroup
-        );
-
         if (groupIndex > -1 && cardIndexInGroup > -1) {
           // Remove from group's children
           let cardsTmp = update(cards, {
@@ -101,22 +90,10 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
             },
           });
 
-          console.log(
-            "[EXTRACT_FROM_GROUP] After removing from group:",
-            cardsTmp
-          );
-
           // Insert at hover position in root level
           const hoverIdx = cardsTmp.findIndex(
             (card) => card.id === hoverItem.id
           );
-          console.log(
-            "[EXTRACT_FROM_GROUP] hoverIdx in root:",
-            hoverIdx,
-            "hoverItem.id:",
-            hoverItem.id
-          );
-
           if (hoverIdx > -1) {
             res = update(cardsTmp, {
               $splice: [
@@ -127,17 +104,12 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
                 ],
               ],
             });
-            console.log("[EXTRACT_FROM_GROUP] After inserting at root:", res);
           } else {
             // If hover item not found, just append
             res = [...cardsTmp, dragItem.data];
-            console.log("[EXTRACT_FROM_GROUP] Appended to root:", res);
           }
         } else {
           res = cards;
-          console.log(
-            "[EXTRACT_FROM_GROUP] Not found in groups, keeping cards as is"
-          );
         }
       } else {
         let cardsTmp = deleteCard(cards, dragItem);
