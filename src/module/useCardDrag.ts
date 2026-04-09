@@ -93,29 +93,46 @@ export const useCardDrag = ({
       // Update the item to ensure it has the correct isUpDrag value
       item.isUpDrag = isUpDragValue;
 
+      // Debug logs
+      console.log("DROP EVENT:", {
+        draggedCardId: item.id,
+        draggedCardLevel: item.level,
+        targetCardId: data.id,
+        targetIsGroup,
+        targetHasChildren,
+        targetChildrenCount: targetChildren?.length || 0,
+        isUpDragValue,
+        idx,
+      });
+
       // Check if a level 2 card is being dragged OUT of this group
       // by checking if item.level === 2 and item is NOT moving to be inside a group
       const isDraggingOutOfGroup = item.level === 2 && !targetIsGroup;
 
       if (isDraggingOutOfGroup) {
         // Moving from inside group to root level
+        console.log("ACTION: Extracting from group");
         onMove(item, {
           id: data.id,
           hoverIndex: idx,
           isGroup: false,
           level: 1,
         });
-      } else if (targetIsGroup && targetHasChildren && !isUpDragValue) {
-        // Only move INTO a group if dropping in the lower half (not at top edge)
-        // This allows cards to be reordered at the same level by dropping at the top
+      } else if (targetIsGroup && !isUpDragValue) {
+        // Move INTO a group if dropping in the lower half (not at top edge)
+        // This allows merging cards into groups regardless of whether they already have children
+        console.log("ACTION: Merging into group (revised)");
         onMove(item, {
           id: data.id,
-          hoverIndex: targetChildren.length,
+          hoverIndex: targetChildren?.length || 0,
           isGroup: true,
           level: 2,
         });
       } else {
         // Normal reordering at same level
+        console.log("ACTION: Normal reordering", {
+          targetLevel: item.level === 2 && !targetIsGroup ? 2 : 1,
+        });
         const targetLevel = item.level === 2 && !targetIsGroup ? 2 : 1;
         onMove(item, {
           id: data.id,
