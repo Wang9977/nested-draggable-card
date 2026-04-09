@@ -78,15 +78,11 @@ export const useCardDrag = ({
     },
     collect: (monitor) => ({
       handlerId: monitor.getHandlerId(),
-      isOver: monitor.isOver({ shallow: true }),
+      isOver: monitor.isOver(),
       canDrop: monitor.canDrop(),
     }),
     hover: (item: DragItem, monitor) => {
       if (item.isGroup) return;
-
-      // Only process hover if this is a shallow (direct) match, not from nested children
-      const isShallowMatch = monitor.isOver({ shallow: true });
-      if (!isShallowMatch) return;
 
       const hoverBoundingRect = ref.current?.getBoundingClientRect();
       if (!hoverBoundingRect) return;
@@ -99,30 +95,27 @@ export const useCardDrag = ({
         (hoverBoundingRect.top + hoverBoundingRect.bottom) / 2;
       const isInserTop = floatItemY < hoverMiddleY;
 
-      console.log("HOVER UPDATE:", {
-        itemId: item.id,
-        itemLevel: item.level,
-        targetId: data.id,
-        targetLevel: level,
-        isGroup,
-        isInserTop,
-        isShallowMatch,
-        timestamp: new Date().toISOString(),
-      });
-
       setIsInsertTop(isInserTop);
       item.isUpDrag = isInserTop;
     },
     drop: (item: DragItem, monitor) => {
-      // Only process drop if this is a shallow (direct) match, not from nested children
-      if (!monitor.isOver({ shallow: true })) return;
-
       const targetChildren = data?.children;
       const targetHasChildren =
         Array.isArray(targetChildren) && targetChildren.length > 0;
       const targetIsGroup = isGroup || targetHasChildren;
 
       if (item.isGroup) return;
+
+      // CRITICAL: Level 1 items should NOT be dropped on level 2 cards
+      // They should only be dropped on level 1 cards (reordering) or groups (merging)
+      // If a level 1 item is being dragged and we're a level 2 card, skip this handler
+      // The parent group handler will handle the merge
+      if (item.level === 1 && level === 2) {
+        console.log(
+          "SKIP DROP: Level 1 item dropped on level 2 card - parent will handle"
+        );
+        return;
+      }
 
       // Use the local isInsertTop state which is the most recent hover state
       // This ensures we have the correct direction even if drop fires at a different time
