@@ -90,6 +90,19 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
             },
           });
 
+          // Auto-delete empty condition groups (type === 4)
+          const groupAfterExtraction = cardsTmp[groupIndex];
+          if (
+            groupAfterExtraction.type === 4 &&
+            (!groupAfterExtraction.children ||
+              groupAfterExtraction.children.length === 0)
+          ) {
+            // Remove the empty condition group
+            cardsTmp = update(cardsTmp, {
+              $splice: [[groupIndex, 1]],
+            });
+          }
+
           // Insert at hover position in root level
           const hoverIdx = cardsTmp.findIndex(
             (card) => card.id === hoverItem.id
