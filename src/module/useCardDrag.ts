@@ -84,6 +84,30 @@ export const useCardDrag = ({
     hover: (item: DragItem, monitor) => {
       if (item.isGroup) return;
 
+      // Prevent level 2 cards from showing top feedback when level 1 item is dragged to top
+      // This prevents double visual feedback in nested scenarios
+      if (item.level === 1 && level === 2) {
+        const hoverBoundingRect = ref.current?.getBoundingClientRect();
+        if (!hoverBoundingRect) return;
+
+        const dragOffset = monitor.getDifferenceFromInitialOffset();
+        if (!dragOffset) return;
+
+        const floatItemY = dragOffset.y + (item.dragBoundingRect?.top || 0);
+        const hoverMiddleY =
+          (hoverBoundingRect.top + hoverBoundingRect.bottom) / 2;
+        const isInserTop = floatItemY < hoverMiddleY;
+
+        // If level 1 item is at top of level 2, skip hover update
+        // Let the parent (group) handle it
+        if (isInserTop) {
+          console.log(
+            "SKIP HOVER: Level 1 item to top of level 2 - let parent handle"
+          );
+          return;
+        }
+      }
+
       const hoverBoundingRect = ref.current?.getBoundingClientRect();
       if (!hoverBoundingRect) return;
 
@@ -112,6 +136,15 @@ export const useCardDrag = ({
 
       // Update the item to ensure it has the correct isUpDrag value
       item.isUpDrag = isUpDragValue;
+
+      // IMPORTANT: Level 1 item dragging to top of level 2 card should be handled by parent
+      // This prevents double-handling when dragging above a nested card
+      if (item.level === 1 && level === 2 && isUpDragValue) {
+        console.log(
+          "SKIP DROP: Level 1 item to top of level 2 - let parent handle"
+        );
+        return;
+      }
 
       // Debug logs
       console.log("DROP EVENT:", {
