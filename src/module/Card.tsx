@@ -7,7 +7,6 @@ import {
 } from "@ant-design/icons";
 import Container from "./Container";
 import moduleStyle from "./index.module.scss";
-import Line from "./Line";
 import { useCardDrag } from "./useCardDrag";
 import { CardData } from "./ItemTypes";
 import { DragItem, HoverItem } from "./types";
@@ -185,25 +184,19 @@ const Card: React.FC<CardProps> = ({
               }}
             />
           </div>
-          <div style={{ width: "100%" }}>
-            <div
-              className={isInsertTop && isOver ? moduleStyle.shadowZone : ""}
-              style={
-                isInsertTop && isOver
-                  ? { ...{ top: 0, transform: "translateY(-8px)" } }
-                  : {}
-              }
-            >
-              {isInsertTop && isOver && (
+          <div style={{ width: "100%", position: "relative" }}>
+            {isInsertTop && isOver && (
+              <div
+                className={moduleStyle.shadowZone}
+                style={{
+                  top: "-12px",
+                  transform: "translateY(-50%)",
+                  height: "100px",
+                }}
+              >
                 <div className={moduleStyle.shadowContent} />
-              )}
-            </div>
-            <Line
-              lineStyle={{
-                marginBottom: 4,
-                opacity: isInsertTop && isOver ? 1 : 0,
-              }}
-            />
+              </div>
+            )}
             <div
               ref={previewRef}
               className={moduleStyle.rightDiv}
@@ -216,25 +209,18 @@ const Card: React.FC<CardProps> = ({
             >
               {isGroup ? renderCardIsGroup() : renderCardNoGroup()}
             </div>
-            <Line
-              lineStyle={{
-                opacity: isInsertTop === false && isOver ? 1 : 0,
-              }}
-            />
-            <div
-              className={
-                isInsertTop === false && isOver ? moduleStyle.shadowZone : ""
-              }
-              style={
-                isInsertTop === false && isOver
-                  ? { ...{ bottom: 0, transform: "translateY(8px)" } }
-                  : {}
-              }
-            >
-              {isInsertTop === false && isOver && (
+            {isInsertTop === false && isOver && (
+              <div
+                className={moduleStyle.shadowZone}
+                style={{
+                  bottom: "-12px",
+                  transform: "translateY(50%)",
+                  height: "100px",
+                }}
+              >
                 <div className={moduleStyle.shadowContent} />
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
