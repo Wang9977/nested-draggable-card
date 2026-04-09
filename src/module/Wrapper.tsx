@@ -36,7 +36,13 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
       const isSameLevelReordering =
         dragItem.level === hoverItem.level &&
         dragItem.level === 1 &&
-        dragItem.id !== hoverItem.id;
+        dragItem.id !== hoverItem.id &&
+        !dragItem.isGroup; // Exclude group reordering
+      const isGroupReordering =
+        dragItem.level === 1 &&
+        hoverItem.level === 1 &&
+        dragItem.id !== hoverItem.id &&
+        dragItem.isGroup; // Group-to-group reordering at level 1
       // detect when moving from group (level 2) to root level (level 1)
       const isMovingOutOfGroup = isMovingFromGroup && hoverItem.level === 1;
 
@@ -59,6 +65,7 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
       console.log("MOVE_CARD_CALLED:", {
         draggedCardId: dragItem.id,
         draggedCardLevel: dragItem.level,
+        draggedCardIsGroup: dragItem.isGroup,
         targetCardId: hoverItem.id,
         targetCardLevel: hoverItem.level,
         targetCardIsGroup: hoverItem.isGroup,
@@ -66,10 +73,13 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
         isMovingToGroup,
         isMovingFromGroup,
         isSameLevelReordering,
+        isGroupReordering,
         isMovingOutOfGroup,
         isMovingL1ToGroupViaL2,
         isMovingL2OutOfGroupToLevel1Below,
-        reason: isMovingToGroup
+        reason: isGroupReordering
+          ? "Group reordering"
+          : isMovingToGroup
           ? "Moving to group"
           : isMovingL1ToGroupViaL2
           ? "Moving L1 to group via L2"
@@ -82,8 +92,30 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
           : "Default case",
       });
 
-      // For same-level reordering, we need to handle it differently to avoid deletion
-      if (isSameLevelReordering) {
+      // For group reordering at level 1
+      if (isGroupReordering) {
+        const dragIdx = cards.findIndex((c) => c.id === dragItem.id);
+        const hoverIdx = cards.findIndex((c) => c.id === hoverItem.id);
+
+        if (dragIdx > -1 && hoverIdx > -1) {
+          // Remove the dragged group
+          const cardsWithoutDrag = update(cards, { $splice: [[dragIdx, 1]] });
+          // Insert at new position
+          const insertIdx =
+            dragIdx < hoverIdx
+              ? dragItem.isUpDrag
+                ? hoverIdx - 1
+                : hoverIdx
+              : dragItem.isUpDrag
+              ? hoverIdx
+              : hoverIdx + 1;
+          res = update(cardsWithoutDrag, {
+            $splice: [[insertIdx, 0, dragItem.data]],
+          });
+        } else {
+          res = cards;
+        }
+      } else if (isSameLevelReordering) {
         const dragIdx = cards.findIndex((c) => c.id === dragItem.id);
         const hoverIdx = cards.findIndex((c) => c.id === hoverItem.id);
 
