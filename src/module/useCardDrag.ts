@@ -56,6 +56,26 @@ export const useCardDrag = ({
 
   const [{ handlerId, isOver, canDrop: canDropState }, drop] = useDrop({
     accept: [ItemTypes.CARD, ItemTypes.GROUP],
+    canDrop: (item: DragItem) => {
+      // Prevent dropping groups
+      if (item.isGroup) return false;
+
+      // Root level card can be dropped on:
+      // 1. Other root level cards (same level reordering)
+      // 2. Groups (merging)
+      if (item.level === 1) {
+        return true;
+      }
+
+      // Level 2 card (inside a group) can be dropped on:
+      // 1. Root level cards (extracting)
+      // 2. Same level items (reordering within group)
+      if (item.level === 2) {
+        return level === 1 || level === 2;
+      }
+
+      return false;
+    },
     collect: (monitor) => ({
       handlerId: monitor.getHandlerId(),
       isOver: monitor.isOver(),
@@ -98,11 +118,14 @@ export const useCardDrag = ({
         draggedCardId: item.id,
         draggedCardLevel: item.level,
         targetCardId: data.id,
+        targetData: data,
         targetIsGroup,
         targetHasChildren,
+        isGroup,
         targetChildrenCount: targetChildren?.length || 0,
         isUpDragValue,
         idx,
+        timestamp: new Date().toISOString(),
       });
 
       // Check if a level 2 card is being dragged OUT of this group
@@ -121,7 +144,11 @@ export const useCardDrag = ({
       } else if (targetIsGroup && !isUpDragValue) {
         // Move INTO a group if dropping in the lower half (not at top edge)
         // This allows merging cards into groups regardless of whether they already have children
-        console.log("ACTION: Merging into group (revised)");
+        console.log("ACTION: Merging into group (revised)", {
+          reason: "targetIsGroup && !isUpDragValue",
+          targetIsGroup,
+          isUpDragValue,
+        });
         onMove(item, {
           id: data.id,
           hoverIndex: targetChildren?.length || 0,
@@ -131,6 +158,10 @@ export const useCardDrag = ({
       } else {
         // Normal reordering at same level
         console.log("ACTION: Normal reordering", {
+          reason: "Neither merge nor extract condition met",
+          targetIsGroup,
+          isUpDragValue,
+          isDraggingOutOfGroup,
           targetLevel: item.level === 2 && !targetIsGroup ? 2 : 1,
         });
         const targetLevel = item.level === 2 && !targetIsGroup ? 2 : 1;

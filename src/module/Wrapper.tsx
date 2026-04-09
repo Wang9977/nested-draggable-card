@@ -29,7 +29,9 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
 
       const targetCard = cards.find((c) => c.id === hoverItem.id);
       const targetHasChildren = !!(targetCard as any)?.children?.length;
-      const isMovingToGroup = targetHasChildren;
+      const isMovingToGroup =
+        hoverItem.isGroup === true &&
+        (targetHasChildren || hoverItem.level === 2);
       const isMovingFromGroup = dragItem.level === 2;
       const isSameLevelReordering =
         dragItem.level === hoverItem.level &&
@@ -37,6 +39,27 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
         dragItem.id !== hoverItem.id;
       // detect when moving from group (level 2) to root level (level 1)
       const isMovingOutOfGroup = isMovingFromGroup && hoverItem.level === 1;
+
+      // Debug logging
+      console.log("MOVE_CARD_CALLED:", {
+        draggedCardId: dragItem.id,
+        draggedCardLevel: dragItem.level,
+        targetCardId: hoverItem.id,
+        targetCardLevel: hoverItem.level,
+        targetCardIsGroup: hoverItem.isGroup,
+        targetHasChildren,
+        isMovingToGroup,
+        isMovingFromGroup,
+        isSameLevelReordering,
+        isMovingOutOfGroup,
+        reason: isMovingToGroup
+          ? "Moving to group"
+          : isSameLevelReordering
+          ? "Same level reordering"
+          : isMovingOutOfGroup
+          ? "Moving out of group"
+          : "Default case",
+      });
 
       // For same-level reordering, we need to handle it differently to avoid deletion
       if (isSameLevelReordering) {
@@ -129,7 +152,11 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
 
         if (isMovingToGroup) {
           const targetIdx = cardsTmp.findIndex((c) => c.id === hoverItem.id);
-          if (targetIdx > -1 && cardsTmp[targetIdx]?.children) {
+          if (targetIdx > -1) {
+            // Ensure the target has a children array
+            if (!cardsTmp[targetIdx].children) {
+              cardsTmp[targetIdx].children = [];
+            }
             res = update(cardsTmp, {
               [targetIdx]: {
                 children: {
