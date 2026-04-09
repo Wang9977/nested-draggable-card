@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useMemo } from "react";
 import { Button, Card as AntdCard, Popconfirm, Tag } from "antd";
 import {
   HolderOutlined,
@@ -57,6 +57,12 @@ const Card: React.FC<CardProps> = ({
     isReadOnly,
     onMove: moveCard,
   });
+
+  const cardHeightRef = useRef<HTMLDivElement>(null);
+  const cardHeight = useMemo(() => {
+    // 获取卡片的实际高度，默认为 100px
+    return cardHeightRef.current?.offsetHeight || 100;
+  }, [isGroup, data, isDragging]);
 
   const highlightStyle = isOver ? { border: "1px solid #3C88F0" } : {};
 
@@ -191,7 +197,7 @@ const Card: React.FC<CardProps> = ({
                 style={{
                   top: "-12px",
                   transform: "translateY(-50%)",
-                  height: "100px",
+                  height: `${cardHeight}px`,
                 }}
               >
                 <div className={moduleStyle.shadowContent} />
@@ -207,7 +213,9 @@ const Card: React.FC<CardProps> = ({
                 backgroundColor: level === 2 ? "#fff" : "#F7F7F7",
               }}
             >
-              {isGroup ? renderCardIsGroup() : renderCardNoGroup()}
+              <div ref={cardHeightRef}>
+                {isGroup ? renderCardIsGroup() : renderCardNoGroup()}
+              </div>
             </div>
             {isInsertTop === false && isOver && (
               <div
@@ -215,7 +223,7 @@ const Card: React.FC<CardProps> = ({
                 style={{
                   bottom: "-12px",
                   transform: "translateY(50%)",
-                  height: "100px",
+                  height: `${cardHeight}px`,
                 }}
               >
                 <div className={moduleStyle.shadowContent} />
