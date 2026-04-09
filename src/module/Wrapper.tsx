@@ -40,6 +40,13 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
       // detect when moving from group (level 2) to root level (level 1)
       const isMovingOutOfGroup = isMovingFromGroup && hoverItem.level === 1;
 
+      // NEW: detect when moving level 1 item INTO a group (identified by hoverItem.level === 2 && hoverItem.isGroup === true)
+      // This handles the case when dragging a level 1 card above a level 2 card inside a group
+      const isMovingL1ToGroupViaL2 =
+        dragItem.level === 1 &&
+        hoverItem.level === 2 &&
+        hoverItem.isGroup === true;
+
       // Debug logging
       console.log("MOVE_CARD_CALLED:", {
         draggedCardId: dragItem.id,
@@ -52,8 +59,11 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
         isMovingFromGroup,
         isSameLevelReordering,
         isMovingOutOfGroup,
+        isMovingL1ToGroupViaL2,
         reason: isMovingToGroup
           ? "Moving to group"
+          : isMovingL1ToGroupViaL2
+          ? "Moving L1 to group via L2"
           : isSameLevelReordering
           ? "Same level reordering"
           : isMovingOutOfGroup
@@ -143,6 +153,58 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
           } else {
             // If hover item not found, just append
             res = [...cardsTmp, dragItem.data];
+          }
+        } else {
+          res = cards;
+        }
+      } else if (isMovingL1ToGroupViaL2) {
+        // NEW CASE: Moving a level 1 card INTO a group, positioned relative to a level 2 card
+        // Find which group contains the target level 2 card
+        let groupIndex = -1;
+        let cardIndexInGroup = -1;
+
+        cards.forEach((card, idx) => {
+          const childIndex = card.children?.findIndex(
+            (c) => c.id === hoverItem.id
+          );
+          if (childIndex !== undefined && childIndex > -1) {
+            groupIndex = idx;
+            cardIndexInGroup = childIndex;
+          }
+        });
+
+        console.log("ACTION: Merging L1 into group via L2", {
+          groupIndex,
+          cardIndexInGroup,
+          isUpDrag: dragItem.isUpDrag,
+        });
+
+        if (groupIndex > -1) {
+          // Remove the dragged item from root level
+          let cardsTmp = deleteCard(cards, dragItem);
+
+          // Find the new group index after deletion
+          let newGroupIndex = cardsTmp.findIndex(
+            (c) => c.id === cards[groupIndex].id
+          );
+
+          if (newGroupIndex > -1) {
+            // Insert into the group
+            // If isUpDrag is true, insert BEFORE the target card
+            // If isUpDrag is false, insert AFTER the target card
+            const insertPosition = dragItem.isUpDrag
+              ? cardIndexInGroup
+              : cardIndexInGroup + 1;
+
+            res = update(cardsTmp, {
+              [newGroupIndex]: {
+                children: {
+                  $splice: [[insertPosition, 0, dragItem.data]],
+                },
+              },
+            });
+          } else {
+            res = cardsTmp;
           }
         } else {
           res = cards;

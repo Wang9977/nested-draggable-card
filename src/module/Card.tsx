@@ -66,17 +66,6 @@ const Card: React.FC<CardProps> = ({
 
   const highlightStyle = isOver ? { border: "1px solid #3C88F0" } : {};
 
-  // Suppress top feedback for level 2 cards to prevent double visual feedback
-  // When a level 1 item is dragged above a group containing level 2 cards,
-  // only the group should show feedback, not the nested cards
-  const shouldShowTopFeedback = useMemo(() => {
-    if (level === 2 && isInsertTop) {
-      // Suppress feedback for nested cards
-      return false;
-    }
-    return isInsertTop && isOver;
-  }, [level, isInsertTop, isOver]);
-
   const handleDelete = () => deleteCard(data);
   const handleConvertToGroup = () => convertToGroup(data);
   const handleChangeOperator = () => changeOperator(data, data.operator);
@@ -202,7 +191,7 @@ const Card: React.FC<CardProps> = ({
             />
           </div>
           <div style={{ width: "100%", position: "relative" }}>
-            {shouldShowTopFeedback && (
+            {isInsertTop && isOver && (
               <div
                 className={moduleStyle.shadowZone}
                 style={{

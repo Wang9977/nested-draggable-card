@@ -106,17 +106,6 @@ export const useCardDrag = ({
 
       if (item.isGroup) return;
 
-      // CRITICAL: Level 1 items should NOT be dropped on level 2 cards
-      // They should only be dropped on level 1 cards (reordering) or groups (merging)
-      // If a level 1 item is being dragged and we're a level 2 card, skip this handler
-      // The parent group handler will handle the merge
-      if (item.level === 1 && level === 2) {
-        console.log(
-          "SKIP DROP: Level 1 item dropped on level 2 card - parent will handle"
-        );
-        return;
-      }
-
       // Use the local isInsertTop state which is the most recent hover state
       // This ensures we have the correct direction even if drop fires at a different time
       const isUpDragValue = isInsertTop !== null ? isInsertTop : item.isUpDrag;
@@ -124,7 +113,6 @@ export const useCardDrag = ({
       // Update the item to ensure it has the correct isUpDrag value
       item.isUpDrag = isUpDragValue;
 
-      // Debug logs
       console.log("DROP EVENT:", {
         draggedCardId: item.id,
         draggedCardLevel: item.level,
@@ -133,12 +121,32 @@ export const useCardDrag = ({
         targetIsGroup,
         targetHasChildren,
         isGroup,
+        level,
         targetChildrenCount: targetChildren?.length || 0,
         isUpDragValue,
         idx,
         timestamp: new Date().toISOString(),
-        isDirectTarget: monitor.isOver({ shallow: true }),
       });
+
+      // CRITICAL: When a level 1 item is dropped on a level 2 card (inside a group),
+      // we should trigger a merge into the parent group, NOT reorder at level 2
+      // This allows inserting level 1 items INSIDE groups, above existing nested cards
+      if (item.level === 1 && level === 2 && isUpDragValue) {
+        // Level 1 item dropped above a level 2 card
+        // This should merge the item INTO the parent group, above this card
+        console.log(
+          "ACTION: Merging into parent group (level 1 on level 2 top)"
+        );
+
+        // Call with level 2 detail so parent can identify which card to insert before
+        onMove(item, {
+          id: data.id, // Reference the level 2 card being hovered
+          hoverIndex: idx, // Position within the group
+          isGroup: true, // Indicate this is going into a group
+          level: 2, // Target is level 2 (inside group)
+        });
+        return;
+      }
 
       // Check if a level 2 card is being dragged OUT of this group
       // by checking if item.level === 2 and item is NOT moving to be inside a group
