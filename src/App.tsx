@@ -6,6 +6,7 @@ import { Button, ConfigProvider, Card as AntdCard } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import Wrapper from "./module/Wrapper";
 import { CardData } from "./module/ItemTypes";
+import GlobalStyles from "./styles/GlobalStyles";
 
 function App() {
   const [cards, setCards] = useState<CardData[]>([]);
@@ -24,6 +25,7 @@ function App() {
 
   return (
     <ConfigProvider locale={zhCN}>
+      <GlobalStyles />
       <div className="App" style={{ padding: 24 }}>
         <div style={{ marginBottom: 16 }}>
           <Button type="primary" onClick={addCard}>
