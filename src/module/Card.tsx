@@ -105,22 +105,21 @@ const CardMainDes = styled.div`
   font-size: ${theme.typography.fontSize.xs};
 `;
 
-const ShadowZone = styled.div`
+const InsertionLine = styled.div`
   position: absolute;
   left: 0;
   right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    ${theme.colors.primary} 20%,
+    ${theme.colors.primary} 80%,
+    transparent 100%
+  );
   pointer-events: none;
   z-index: ${theme.zIndex.drag};
-`;
-
-const ShadowContent = styled.div`
-  position: relative;
-  width: 100%;
-  height: 100%;
-  background: ${theme.colors.dragFeedbackBg};
-  border: 2px dashed ${theme.colors.dragFeedbackBorder};
-  border-radius: ${theme.borderRadius.lg};
-  box-shadow: inset 0 0 0 1px rgba(22, 119, 255, 0.2);
+  box-shadow: 0 0 8px rgba(22, 119, 255, 0.4);
 `;
 
 const CardWrapper = styled.div`
@@ -310,16 +309,12 @@ const Card: React.FC<CardProps> = ({
             </LeftDiv>
             <div style={{ width: "100%", position: "relative" }}>
               {isInsertTop && isOver && (
-                <ShadowZone
+                <InsertionLine
                   style={{
-                    top: "-12px",
+                    top: 0,
                     transform: "translateY(-50%)",
-                    height: `${cardHeight}px`,
                   }}
-                  title={`Feedback: Card ${id} (level ${level})`}
-                >
-                  <ShadowContent />
-                </ShadowZone>
+                />
               )}
               <RightDiv
                 ref={previewRef}
@@ -335,15 +330,12 @@ const Card: React.FC<CardProps> = ({
                 </div>
               </RightDiv>
               {isInsertTop === false && isOver && (
-                <ShadowZone
+                <InsertionLine
                   style={{
-                    bottom: "-12px",
+                    bottom: 0,
                     transform: "translateY(50%)",
-                    height: `${cardHeight}px`,
                   }}
-                >
-                  <ShadowContent />
-                </ShadowZone>
+                />
               )}
             </div>
           </Main>
