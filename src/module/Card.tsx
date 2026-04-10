@@ -120,6 +120,22 @@ const InsertionLine = styled.div`
   pointer-events: none;
   z-index: ${theme.zIndex.drag};
   box-shadow: 0 0 8px rgba(22, 119, 255, 0.4);
+  animation: insertionPulse 1.5s ease-in-out infinite;
+
+  @keyframes insertionPulse {
+    0% {
+      opacity: 0.8;
+      box-shadow: 0 0 8px rgba(22, 119, 255, 0.4);
+    }
+    50% {
+      opacity: 1;
+      box-shadow: 0 0 12px rgba(22, 119, 255, 0.6);
+    }
+    100% {
+      opacity: 0.8;
+      box-shadow: 0 0 8px rgba(22, 119, 255, 0.4);
+    }
+  }
 `;
 
 const CardWrapper = styled.div`
