@@ -346,7 +346,7 @@ const Card: React.FC<CardProps> = ({
               />
             </LeftDiv>
             <div style={{ width: "100%", position: "relative" }}>
-              {isInsertTop && isOver && (
+              {isInsertTop && isOver && canDropState && (
                 <InsertionLineWrapper
                   style={{ top: 0, transform: "translateY(-50%)" }}
                 >
@@ -368,7 +368,7 @@ const Card: React.FC<CardProps> = ({
                   {isGroup ? renderCardIsGroup() : renderCardNoGroup()}
                 </div>
               </RightDiv>
-              {isInsertTop === false && isOver && (
+              {isInsertTop === false && isOver && canDropState && (
                 <InsertionLineWrapper
                   style={{ bottom: 0, transform: "translateY(50%)" }}
                 >
