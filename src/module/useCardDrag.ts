@@ -96,6 +96,29 @@ export const useCardDrag = ({
       const dragOffset = monitor.getDifferenceFromInitialOffset();
       if (!dragOffset) return;
 
+      // CRITICAL: Only show hover feedback on appropriate targets:
+      // - If dragging level 1 item to a group at level 1, only the group or internal cards should show
+      // - If dragging level 1 item to level 2 cards, only level 2 cards should show
+      // - This prevents double feedback when dragging into groups
+      const targetChildren = data?.children;
+      const targetHasChildren =
+        Array.isArray(targetChildren) && targetChildren.length > 0;
+      const targetIsGroup = isGroup || targetHasChildren;
+
+      // When dragging level 1 item into a level 1 group, don't show feedback on the group itself
+      // (Wait for feedback on internal cards instead)
+      // Exception: If group is empty, show feedback on the group
+      if (
+        item.level === 1 &&
+        level === 1 &&
+        targetIsGroup &&
+        targetHasChildren
+      ) {
+        // This is a group with children, skip hover feedback here
+        // The children will show the feedback
+        return;
+      }
+
       const floatItemY = dragOffset.y + (item.dragBoundingRect?.top || 0);
       const hoverMiddleY =
         (hoverBoundingRect.top + hoverBoundingRect.bottom) / 2;
@@ -167,6 +190,28 @@ export const useCardDrag = ({
           hoverIndex: idx, // Index of the target card in its parent group
           isGroup: true,
           level: 2,
+        });
+        return;
+      }
+
+      // CRITICAL: When a level 1 card is dropped on/around a level 1 group,
+      // treat it as reordering (not merging). Both stay at level 1.
+      if (item.level === 1 && level === 1 && targetIsGroup) {
+        console.log(
+          "ACTION: Level 1 card reordering with level 1 group (not merging)",
+          {
+            reason:
+              "When dropping level 1 on level 1 group, reorder don't merge",
+            draggedCardId: item.id,
+            targetGroupId: data.id,
+            isUpDragValue,
+          }
+        );
+        onMove(item, {
+          id: data.id,
+          hoverIndex: idx,
+          isGroup: false, // Keep it at level 1, don't merge
+          level: 1,
         });
         return;
       }
