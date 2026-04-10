@@ -109,33 +109,55 @@ const InsertionLine = styled.div`
   position: absolute;
   left: 0;
   right: 0;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    ${theme.colors.primary} 20%,
-    ${theme.colors.primary} 80%,
-    transparent 100%
-  );
+  height: 5px;
+  background: ${theme.colors.primary};
   pointer-events: none;
   z-index: ${theme.zIndex.drag};
-  box-shadow: 0 0 8px rgba(22, 119, 255, 0.4);
+  border-radius: 2.5px;
   animation: insertionPulse 1.5s ease-in-out infinite;
 
   @keyframes insertionPulse {
     0% {
-      opacity: 0.8;
-      box-shadow: 0 0 8px rgba(22, 119, 255, 0.4);
+      transform: scaleY(0.8);
+      opacity: 0.7;
     }
     50% {
+      transform: scaleY(1.2);
       opacity: 1;
-      box-shadow: 0 0 12px rgba(22, 119, 255, 0.6);
     }
     100% {
-      opacity: 0.8;
-      box-shadow: 0 0 8px rgba(22, 119, 255, 0.4);
+      transform: scaleY(0.8);
+      opacity: 0.7;
     }
   }
+`;
+
+const EndDot = styled.div`
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: ${theme.colors.primary};
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: ${theme.zIndex.drag};
+
+  &.left {
+    left: -4px;
+  }
+
+  &.right {
+    right: -4px;
+  }
+`;
+
+const InsertionLineWrapper = styled.div`
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 5px;
+  pointer-events: none;
+  z-index: ${theme.zIndex.drag};
 `;
 
 const CardWrapper = styled.div`
@@ -325,12 +347,13 @@ const Card: React.FC<CardProps> = ({
             </LeftDiv>
             <div style={{ width: "100%", position: "relative" }}>
               {isInsertTop && isOver && (
-                <InsertionLine
-                  style={{
-                    top: 0,
-                    transform: "translateY(-50%)",
-                  }}
-                />
+                <InsertionLineWrapper
+                  style={{ top: 0, transform: "translateY(-50%)" }}
+                >
+                  <InsertionLine />
+                  <EndDot className="left" />
+                  <EndDot className="right" />
+                </InsertionLineWrapper>
               )}
               <RightDiv
                 ref={previewRef}
@@ -346,12 +369,13 @@ const Card: React.FC<CardProps> = ({
                 </div>
               </RightDiv>
               {isInsertTop === false && isOver && (
-                <InsertionLine
-                  style={{
-                    bottom: 0,
-                    transform: "translateY(50%)",
-                  }}
-                />
+                <InsertionLineWrapper
+                  style={{ bottom: 0, transform: "translateY(50%)" }}
+                >
+                  <InsertionLine />
+                  <EndDot className="left" />
+                  <EndDot className="right" />
+                </InsertionLineWrapper>
               )}
             </div>
           </Main>
