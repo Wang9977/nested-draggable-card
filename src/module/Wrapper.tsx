@@ -1,9 +1,17 @@
 import React, { useRef, useCallback } from "react";
+import styled from "styled-components";
 import update from "immutability-helper";
 import Container from "./Container";
 import { deleteCard, initFirstCardOpt } from "./utils";
 import { CardData } from "./ItemTypes";
 import { DragItem, HoverItem } from "./types";
+import { theme } from "../styles/tokens";
+
+// Styled Components
+const WrapperContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
 
 interface WrapperProps {
   cards: CardData[];
@@ -404,7 +412,7 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
   );
 
   return (
-    <div>
+    <WrapperContainer>
       <Container
         isReadOnly={isReadOnly}
         level={1}
@@ -414,7 +422,7 @@ const Wrapper: React.FC<WrapperProps> = ({ cards, setCards, isReadOnly }) => {
         convertToGroup={convertToGroup}
         changeOperator={changeOperator}
       />
-    </div>
+    </WrapperContainer>
   );
 };
 
