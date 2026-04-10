@@ -96,33 +96,36 @@ export const useCardDrag = ({
       const dragOffset = monitor.getDifferenceFromInitialOffset();
       if (!dragOffset) return;
 
-      // CRITICAL: Only show hover feedback on appropriate targets:
-      // - If dragging level 1 item to a group at level 1, only the group or internal cards should show
-      // - If dragging level 1 item to level 2 cards, only level 2 cards should show
-      // - This prevents double feedback when dragging into groups
+      const floatItemY = dragOffset.y + (item.dragBoundingRect?.top || 0);
+      const hoverMiddleY =
+        (hoverBoundingRect.top + hoverBoundingRect.bottom) / 2;
+      const isInserTop = floatItemY < hoverMiddleY;
+
+      // CRITICAL FIX: Only skip hover when dragging level 1 item DEEP into a level 1 group with children
+      // (i.e., when the item is positioned in the middle of the group, not at the top/bottom)
+      // This prevents double feedback when dragging into groups, but allows feedback when dragging above groups
       const targetChildren = data?.children;
       const targetHasChildren =
         Array.isArray(targetChildren) && targetChildren.length > 0;
       const targetIsGroup = isGroup || targetHasChildren;
 
-      // When dragging level 1 item into a level 1 group, don't show feedback on the group itself
-      // (Wait for feedback on internal cards instead)
-      // Exception: If group is empty, show feedback on the group
+      // Skip hover feedback only when ALL conditions are true:
+      // 1. Dragging a level 1 card (not a group)
+      // 2. Hovering over a level 1 group with children
+      // 3. AND the item is positioned PAST the group's edge (deep inside, not at top/bottom)
       if (
         item.level === 1 &&
+        !item.isGroup && // Added: must be a card, not a group
         level === 1 &&
         targetIsGroup &&
-        targetHasChildren
+        targetHasChildren &&
+        // Only skip if deep inside the group, not at the edges
+        !isInserTop // If we're at the top, show feedback
       ) {
-        // This is a group with children, skip hover feedback here
-        // The children will show the feedback
+        // This means we're dragging deep into a group with children
+        // Let the internal cards show the feedback instead
         return;
       }
-
-      const floatItemY = dragOffset.y + (item.dragBoundingRect?.top || 0);
-      const hoverMiddleY =
-        (hoverBoundingRect.top + hoverBoundingRect.bottom) / 2;
-      const isInserTop = floatItemY < hoverMiddleY;
 
       setIsInsertTop(isInserTop);
       item.isUpDrag = isInserTop;
