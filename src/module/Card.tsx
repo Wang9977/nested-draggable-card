@@ -11,6 +11,7 @@ import { useCardDrag } from "./useCardDrag";
 import { CardData } from "./ItemTypes";
 import { DragItem, HoverItem } from "./types";
 import { theme } from "../styles/tokens";
+import { animations } from "../styles/responsive";
 
 const { Meta } = AntdCard;
 
@@ -120,6 +121,18 @@ const ShadowContent = styled.div`
   border: 2px dashed ${theme.colors.dragFeedbackBorder};
   border-radius: ${theme.borderRadius.lg};
   box-shadow: inset 0 0 0 1px rgba(22, 119, 255, 0.2);
+`;
+
+const CardWrapper = styled.div`
+  position: relative;
+  margin-bottom: ${theme.spacing.md};
+  ${animations.fadeIn}
+
+  &:hover {
+    .dragIcon {
+      color: ${theme.colors.primary};
+    }
+  }
 `;
 
 interface CardProps {
@@ -261,80 +274,82 @@ const Card: React.FC<CardProps> = ({
   );
 
   return (
-    <div ref={dropRef} data-handler-id={handlerId as string}>
-      <div
-        ref={ref}
-        style={{
-          position: "relative",
-          opacity: isDragging ? 0 : 1,
-        }}
-      >
-        <OpStyle
-          onClick={handleChangeOperator}
-          style={{ opacity: idx === 0 ? 0 : 1, cursor: "pointer" }}
-          color="blue"
+    <CardWrapper>
+      <div ref={dropRef} data-handler-id={handlerId as string}>
+        <div
+          ref={ref}
+          style={{
+            position: "relative",
+            opacity: isDragging ? 0 : 1,
+          }}
         >
-          {data.operator}
-        </OpStyle>
-        <Main>
-          <LeftDiv>
-            <div
-              style={{
-                borderLeft: idx === 0 ? "" : "1px solid #C4DBFA",
-                borderBottom: length <= 1 ? "" : "1px solid #C4DBFA",
-                height: "50%",
-                width: 15,
-              }}
-            />
-            <div
-              style={{
-                borderLeft: length - 1 === idx ? "" : "1px solid #C4DBFA",
-                height: "50%",
-                width: 15,
-              }}
-            />
-          </LeftDiv>
-          <div style={{ width: "100%", position: "relative" }}>
-            {isInsertTop && isOver && (
-              <ShadowZone
+          <OpStyle
+            onClick={handleChangeOperator}
+            style={{ opacity: idx === 0 ? 0 : 1, cursor: "pointer" }}
+            color="blue"
+          >
+            {data.operator}
+          </OpStyle>
+          <Main>
+            <LeftDiv>
+              <div
                 style={{
-                  top: "-12px",
-                  transform: "translateY(-50%)",
-                  height: `${cardHeight}px`,
+                  borderLeft: idx === 0 ? "" : "1px solid #C4DBFA",
+                  borderBottom: length <= 1 ? "" : "1px solid #C4DBFA",
+                  height: "50%",
+                  width: 15,
                 }}
-                title={`Feedback: Card ${id} (level ${level})`}
-              >
-                <ShadowContent />
-              </ShadowZone>
-            )}
-            <RightDiv
-              ref={previewRef}
-              style={{
-                opacity: isDragging ? 0 : 1,
-                display: isDragging ? "none" : "",
-                ...highlightStyle,
-                backgroundColor: level === 2 ? "#fff" : "#F7F7F7",
-              }}
-            >
-              <div ref={cardHeightRef}>
-                {isGroup ? renderCardIsGroup() : renderCardNoGroup()}
-              </div>
-            </RightDiv>
-            {isInsertTop === false && isOver && (
-              <ShadowZone
+              />
+              <div
                 style={{
-                  bottom: "-12px",
-                  transform: "translateY(50%)",
-                  height: `${cardHeight}px`,
+                  borderLeft: length - 1 === idx ? "" : "1px solid #C4DBFA",
+                  height: "50%",
+                  width: 15,
+                }}
+              />
+            </LeftDiv>
+            <div style={{ width: "100%", position: "relative" }}>
+              {isInsertTop && isOver && (
+                <ShadowZone
+                  style={{
+                    top: "-12px",
+                    transform: "translateY(-50%)",
+                    height: `${cardHeight}px`,
+                  }}
+                  title={`Feedback: Card ${id} (level ${level})`}
+                >
+                  <ShadowContent />
+                </ShadowZone>
+              )}
+              <RightDiv
+                ref={previewRef}
+                style={{
+                  opacity: isDragging ? 0 : 1,
+                  display: isDragging ? "none" : "",
+                  ...highlightStyle,
+                  backgroundColor: level === 2 ? "#fff" : "#F7F7F7",
                 }}
               >
-                <ShadowContent />
-              </ShadowZone>
-            )}
-          </div>
-        </Main>
+                <div ref={cardHeightRef}>
+                  {isGroup ? renderCardIsGroup() : renderCardNoGroup()}
+                </div>
+              </RightDiv>
+              {isInsertTop === false && isOver && (
+                <ShadowZone
+                  style={{
+                    bottom: "-12px",
+                    transform: "translateY(50%)",
+                    height: `${cardHeight}px`,
+                  }}
+                >
+                  <ShadowContent />
+                </ShadowZone>
+              )}
+            </div>
+          </Main>
+        </div>
       </div>
-    </div>
+    </CardWrapper>
   );
 };
 
