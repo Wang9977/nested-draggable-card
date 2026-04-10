@@ -5,13 +5,122 @@ import {
   ExpandOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
+import styled from "styled-components";
 import Container from "./Container";
-import moduleStyle from "./index.module.scss";
 import { useCardDrag } from "./useCardDrag";
 import { CardData } from "./ItemTypes";
 import { DragItem, HoverItem } from "./types";
+import { theme } from "../styles/tokens";
 
 const { Meta } = AntdCard;
+
+// Styled Components
+const OpStyle = styled(Tag)`
+  position: absolute;
+  left: -10px;
+  top: -10px;
+  z-index: 10;
+`;
+
+const Main = styled.div`
+  display: flex;
+`;
+
+const LeftDiv = styled.div`
+  width: 15px;
+`;
+
+const RightDiv = styled.div`
+  flex: 1;
+  margin-bottom: ${theme.spacing.sm};
+  position: relative;
+
+  .ant-card {
+    border-radius: ${theme.borderRadius.lg};
+  }
+
+  .ant-card-head {
+    border-bottom: none;
+    min-height: auto;
+    padding: ${theme.spacing.md} ${theme.spacing.lg};
+  }
+
+  .ant-card-body {
+    padding: ${theme.spacing.md} ${theme.spacing.lg};
+    color: ${theme.colors.text.secondary};
+    font-size: ${theme.typography.fontSize.xs};
+  }
+`;
+
+const CardMain = styled(AntdCard)`
+  && {
+    .ant-card-head {
+      border-bottom: none;
+      min-height: auto;
+      padding: ${theme.spacing.md} ${theme.spacing.lg};
+    }
+
+    .ant-card-body {
+      padding: ${theme.spacing.md} ${theme.spacing.lg};
+      color: ${theme.colors.text.secondary};
+      font-size: ${theme.typography.fontSize.xs};
+    }
+  }
+`;
+
+const CardMainHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const CardMainHeaderTitle = styled.div`
+  color: ${theme.colors.text.primary};
+  font-size: ${theme.typography.fontSize.base};
+  font-weight: ${theme.typography.fontWeight.medium};
+  display: flex;
+  align-items: center;
+`;
+
+const DragIcon = styled.div`
+  margin-right: ${theme.spacing.md};
+  color: ${theme.colors.text.secondary};
+  font-size: ${theme.typography.fontSize.base};
+  cursor: move;
+  transition: ${theme.transitions.color};
+
+  &:hover {
+    color: ${theme.colors.primary};
+  }
+`;
+
+const CardMainHeaderOpt = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const CardMainDes = styled.div`
+  color: ${theme.colors.text.secondary};
+  font-size: ${theme.typography.fontSize.xs};
+`;
+
+const ShadowZone = styled.div`
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: ${theme.zIndex.drag};
+`;
+
+const ShadowContent = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: ${theme.colors.dragFeedbackBg};
+  border: 2px dashed ${theme.colors.dragFeedbackBorder};
+  border-radius: ${theme.borderRadius.lg};
+  box-shadow: inset 0 0 0 1px rgba(22, 119, 255, 0.2);
+`;
 
 interface CardProps {
   data: CardData;
@@ -71,22 +180,20 @@ const Card: React.FC<CardProps> = ({
   const handleChangeOperator = () => changeOperator(data, data.operator);
 
   const renderCardNoGroup = () => (
-    <AntdCard
+    <CardMain
       style={{ backgroundColor: level === 2 ? "#fff" : "#F7F7F7" }}
-      className={moduleStyle.cardMain}
       title={
-        <div className={moduleStyle.cardMainHeader}>
-          <div className={moduleStyle.cardMainHeaderTitle}>
-            <div
-              className={moduleStyle.dragIcon}
+        <CardMainHeader>
+          <CardMainHeaderTitle>
+            <DragIcon
               style={!isReadOnly ? { cursor: "move" } : {}}
               ref={dragRef}
             >
               <HolderOutlined />
-            </div>
+            </DragIcon>
             {data?.name || ""}
-          </div>
-          <div className={moduleStyle.cardMainHeaderOpt}>
+          </CardMainHeaderTitle>
+          <CardMainHeaderOpt>
             {level !== 2 && !data?.children?.length && (
               <Button
                 type="text"
@@ -107,29 +214,27 @@ const Card: React.FC<CardProps> = ({
                 删除
               </Button>
             </Popconfirm>
-          </div>
-        </div>
+          </CardMainHeaderOpt>
+        </CardMainHeader>
       }
     >
-      <div className={moduleStyle.cardMainDes}>{data.displayDef || ""}</div>
-    </AntdCard>
+      <CardMainDes>{data.displayDef || ""}</CardMainDes>
+    </CardMain>
   );
 
   const renderCardIsGroup = () => (
-    <AntdCard
-      className={moduleStyle.cardMain}
+    <CardMain
       title={
-        <div className={moduleStyle.cardMainHeader}>
-          <div className={moduleStyle.cardMainHeaderTitle}>
-            <div
-              className={moduleStyle.dragIcon}
+        <CardMainHeader>
+          <CardMainHeaderTitle>
+            <DragIcon
               ref={dragRef}
               style={!isReadOnly ? { cursor: "move" } : {}}
             >
               <HolderOutlined />
-            </div>
+            </DragIcon>
             条件组
-          </div>
+          </CardMainHeaderTitle>
           <Popconfirm
             title="确定删除此条件组?"
             onConfirm={handleDelete}
@@ -140,7 +245,7 @@ const Card: React.FC<CardProps> = ({
               删除
             </Button>
           </Popconfirm>
-        </div>
+        </CardMainHeader>
       }
     >
       <Container
@@ -152,7 +257,7 @@ const Card: React.FC<CardProps> = ({
         changeOperator={changeOperator}
         isReadOnly={isReadOnly}
       />
-    </AntdCard>
+    </CardMain>
   );
 
   return (
@@ -164,16 +269,15 @@ const Card: React.FC<CardProps> = ({
           opacity: isDragging ? 0 : 1,
         }}
       >
-        <Tag
-          className={moduleStyle.opStyle}
+        <OpStyle
           onClick={handleChangeOperator}
           style={{ opacity: idx === 0 ? 0 : 1, cursor: "pointer" }}
           color="blue"
         >
           {data.operator}
-        </Tag>
-        <div className={moduleStyle.main}>
-          <div className={moduleStyle.leftDiv}>
+        </OpStyle>
+        <Main>
+          <LeftDiv>
             <div
               style={{
                 borderLeft: idx === 0 ? "" : "1px solid #C4DBFA",
@@ -189,11 +293,10 @@ const Card: React.FC<CardProps> = ({
                 width: 15,
               }}
             />
-          </div>
+          </LeftDiv>
           <div style={{ width: "100%", position: "relative" }}>
             {isInsertTop && isOver && (
-              <div
-                className={moduleStyle.shadowZone}
+              <ShadowZone
                 style={{
                   top: "-12px",
                   transform: "translateY(-50%)",
@@ -201,12 +304,11 @@ const Card: React.FC<CardProps> = ({
                 }}
                 title={`Feedback: Card ${id} (level ${level})`}
               >
-                <div className={moduleStyle.shadowContent} />
-              </div>
+                <ShadowContent />
+              </ShadowZone>
             )}
-            <div
+            <RightDiv
               ref={previewRef}
-              className={moduleStyle.rightDiv}
               style={{
                 opacity: isDragging ? 0 : 1,
                 display: isDragging ? "none" : "",
@@ -217,21 +319,20 @@ const Card: React.FC<CardProps> = ({
               <div ref={cardHeightRef}>
                 {isGroup ? renderCardIsGroup() : renderCardNoGroup()}
               </div>
-            </div>
+            </RightDiv>
             {isInsertTop === false && isOver && (
-              <div
-                className={moduleStyle.shadowZone}
+              <ShadowZone
                 style={{
                   bottom: "-12px",
                   transform: "translateY(50%)",
                   height: `${cardHeight}px`,
                 }}
               >
-                <div className={moduleStyle.shadowContent} />
-              </div>
+                <ShadowContent />
+              </ShadowZone>
             )}
           </div>
-        </div>
+        </Main>
       </div>
     </div>
   );
