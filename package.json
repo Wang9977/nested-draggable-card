@@ -2,6 +2,7 @@
   "name": "nested-draggable-card",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://Wang9977.github.io/nested-draggable-card",
   "dependencies": {
     "@ant-design/icons": "^6.1.1",
     "@types/styled-components": "^5.1.36",

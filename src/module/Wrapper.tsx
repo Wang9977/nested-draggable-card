@@ -17,6 +17,7 @@ interface WrapperProps {
   cards: CardData[];
   setCards: React.Dispatch<React.SetStateAction<CardData[]>>;
   isReadOnly: boolean;
+  maxLevel?: number;
 }
 
 const OPERATORS = {
