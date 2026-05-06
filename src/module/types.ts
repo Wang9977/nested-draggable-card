@@ -11,6 +11,8 @@ export interface CardData {
 export interface DragItem {
   id: string | number;
   level: number;
+  path: number[];
+  parentPath: number[];
   data: CardData;
   dragIndex: number;
   isGroup: boolean;
@@ -21,6 +23,8 @@ export interface DragItem {
 
 export interface HoverItem {
   id: string | number;
+  path: number[];
+  parentPath: number[];
   hoverIndex: number;
   isGroup: boolean;
   level: number;

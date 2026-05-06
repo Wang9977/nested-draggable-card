@@ -1,6 +1,137 @@
 import update from "immutability-helper";
 import { optTypeEnum, CardData } from "./ItemTypes";
 
+export type CardPath = number[];
+
+const ROOT_OPERATOR = "交";
+
+const isEmptyGroup = (card?: CardData) =>
+  !!card && card.type === 4 && (!card.children || card.children.length === 0);
+
+const cleanEmptyGroups = (cards: CardData[]): CardData[] =>
+  cards.reduce<CardData[]>((result, card) => {
+    const nextChildren = card.children ? cleanEmptyGroups(card.children) : undefined;
+    const nextCard = nextChildren ? { ...card, children: nextChildren } : card;
+
+    if (!isEmptyGroup(nextCard)) {
+      result.push(nextCard);
+    }
+
+    return result;
+  }, []);
+
+export const isSamePath = (pathA: CardPath, pathB: CardPath): boolean =>
+  pathA.length === pathB.length && pathA.every((segment, idx) => segment === pathB[idx]);
+
+export const getNodeAtPath = (
+  cards: CardData[],
+  path: CardPath
+): CardData | null => {
+  let currentList = cards;
+  let currentNode: CardData | null = null;
+
+  for (const index of path) {
+    currentNode = currentList[index] || null;
+    if (!currentNode) return null;
+    currentList = currentNode.children || [];
+  }
+
+  return currentNode;
+};
+
+export const updateNodeAtPath = (
+  cards: CardData[],
+  path: CardPath,
+  updater: (card: CardData) => CardData
+): CardData[] => {
+  if (!path.length) return cards;
+
+  const [index, ...rest] = path;
+  return cards.map((card, idx) => {
+    if (idx !== index) return card;
+    if (!rest.length) return updater(card);
+
+    return {
+      ...card,
+      children: updateNodeAtPath(card.children || [], rest, updater),
+    };
+  });
+};
+
+export const updateListAtPath = (
+  cards: CardData[],
+  path: CardPath,
+  updater: (list: CardData[]) => CardData[]
+): CardData[] => {
+  if (!path.length) {
+    return updater(cards);
+  }
+
+  const [index, ...rest] = path;
+  return cards.map((card, idx) => {
+    if (idx !== index) return card;
+
+    return {
+      ...card,
+      children: updateListAtPath(card.children || [], rest, updater),
+    };
+  });
+};
+
+export const removeNodeAtPath = (
+  cards: CardData[],
+  path: CardPath
+): { cards: CardData[]; removed: CardData | null } => {
+  if (!path.length) {
+    return { cards, removed: null };
+  }
+
+  const [index, ...rest] = path;
+
+  if (!rest.length) {
+    const removed = cards[index] || null;
+    return {
+      cards: cleanEmptyGroups(update(cards, { $splice: [[index, 1]] })),
+      removed,
+    };
+  }
+
+  const current = cards[index];
+  if (!current?.children) {
+    return { cards, removed: null };
+  }
+
+  const next = removeNodeAtPath(current.children, rest);
+  const updatedCards = cards.map((card, idx) =>
+    idx === index ? { ...card, children: next.cards } : card
+  );
+
+  return { cards: cleanEmptyGroups(updatedCards), removed: next.removed };
+};
+
+export const insertNodeAtPath = (
+  cards: CardData[],
+  parentPath: CardPath,
+  index: number,
+  item: CardData
+): CardData[] =>
+  updateListAtPath(cards, parentPath, (list) => {
+    const nextList = [...list];
+    nextList.splice(index, 0, item);
+    return nextList;
+  });
+
+export const getSubtreeHeight = (card: CardData): number => {
+  if (!card.children?.length) {
+    return 1;
+  }
+
+  return (
+    1 +
+    Math.max(...card.children.map((child) => getSubtreeHeight(child)))
+  );
+};
+
 export const findArrayIndex = (
   arr: CardData[],
   item: { id: string | number }
@@ -17,45 +148,44 @@ export const findArrayIndex = (
   return { outerIdx, innerIdx };
 };
 
+export const findPathById = (
+  cards: CardData[],
+  id: string | number,
+  currentPath: CardPath = []
+): CardPath | null => {
+  for (let index = 0; index < cards.length; index += 1) {
+    const card = cards[index];
+    const path = [...currentPath, index];
+    if (card.id === id) {
+      return path;
+    }
+    if (card.children?.length) {
+      const nestedPath = findPathById(card.children, id, path);
+      if (nestedPath) {
+        return nestedPath;
+      }
+    }
+  }
+
+  return null;
+};
+
 export const deleteCard = (
   arr: CardData[],
   item: { id: string | number }
 ): CardData[] => {
-  const outerIdx = arr.findIndex((card) => card.id === item.id);
+  const path = findPathById(arr, item.id);
+  if (!path) return arr;
 
-  let res: CardData[] = [];
-  if (outerIdx > -1) {
-    res = update(arr, { $splice: [[outerIdx, 1]] });
-  } else {
-    const { outerIdx: outIdx, innerIdx: inIdx } = findArrayIndex(arr, item);
-    if (outIdx < 0 || inIdx < 0) return arr;
-    res = update(arr, {
-      [outIdx]: {
-        children: { $splice: [[inIdx, 1]] },
-      },
-    });
-    if (res?.[outIdx]?.type === 4 && !res?.[outIdx]?.children?.length) {
-      res = update(res, { $splice: [[outIdx, 1]] });
-    }
-  }
-  return res;
+  return removeNodeAtPath(arr, path).cards;
 };
 
 export const initFirstCardOpt = (arr: CardData[]): CardData[] => {
-  const res = arr.map((card, idx) => {
-    const newCard = { ...card };
-    if (idx === 0) {
-      newCard.operator = "交";
-    }
-    if (newCard.children?.length) {
-      newCard.children = newCard.children.map((child, cIdx) => ({
-        ...child,
-        operator: cIdx === 0 ? "交" : child.operator,
-      }));
-    }
-    return newCard;
-  });
-  return res;
+  return arr.map((card, idx) => ({
+    ...card,
+    operator: idx === 0 ? ROOT_OPERATOR : card.operator,
+    children: card.children?.length ? initFirstCardOpt(card.children) : card.children,
+  }));
 };
 
 export const deleteCardItem = (
