@@ -98,11 +98,24 @@ const DragIcon = styled.div`
 const CardMainHeaderOpt = styled.div`
   display: flex;
   align-items: center;
+  gap: ${theme.spacing.xs};
 `;
 
 const CardMainDes = styled.div`
   color: ${theme.colors.text.secondary};
   font-size: ${theme.typography.fontSize.xs};
+`;
+
+const DeleteButton = styled(Button)`
+  && {
+    color: ${theme.colors.text.secondary};
+
+    &:hover,
+    &:focus {
+      color: #b45a5a;
+      background: rgba(180, 90, 90, 0.08);
+    }
+  }
 `;
 
 const InsertionLine = styled.div`
@@ -175,19 +188,23 @@ const CardWrapper = styled.div`
 interface CardProps {
   data: CardData;
   level: number;
+  path: number[];
+  maxLevel: number;
   idx: number;
   id: string | number;
   length: number;
   moveCard: (dragItem: DragItem, hoverItem: HoverItem) => void;
-  deleteCard: (data: CardData) => void;
-  convertToGroup: (data: CardData) => void;
-  changeOperator: (data: CardData, operator?: string) => void;
+  deleteCard: (path: number[]) => void;
+  convertToGroup: (path: number[]) => void;
+  changeOperator: (path: number[]) => void;
   isReadOnly: boolean;
 }
 
 const Card: React.FC<CardProps> = ({
   data,
   level,
+  path,
+  maxLevel,
   idx,
   id,
   length,
@@ -211,9 +228,11 @@ const Card: React.FC<CardProps> = ({
   } = useCardDrag({
     id,
     level,
+    path,
     idx,
     data,
     isReadOnly,
+    maxLevel,
     onMove: moveCard,
   });
 
@@ -224,10 +243,11 @@ const Card: React.FC<CardProps> = ({
   }, [isGroup, data, isDragging]);
 
   const highlightStyle = isOver ? { border: "1px solid #3C88F0" } : {};
+  const canExpand = level < maxLevel && !data?.children?.length;
 
-  const handleDelete = () => deleteCard(data);
-  const handleConvertToGroup = () => convertToGroup(data);
-  const handleChangeOperator = () => changeOperator(data, data.operator);
+  const handleDelete = () => deleteCard(path);
+  const handleConvertToGroup = () => convertToGroup(path);
+  const handleChangeOperator = () => changeOperator(path);
 
   const renderCardNoGroup = () => (
     <CardMain
@@ -244,7 +264,7 @@ const Card: React.FC<CardProps> = ({
             {data?.name || ""}
           </CardMainHeaderTitle>
           <CardMainHeaderOpt>
-            {level !== 2 && !data?.children?.length && (
+            {canExpand && (
               <Button
                 type="text"
                 size="small"
@@ -260,9 +280,9 @@ const Card: React.FC<CardProps> = ({
               okText="确定"
               cancelText="取消"
             >
-              <Button type="text" size="small" danger icon={<DeleteOutlined />}>
+              <DeleteButton type="text" size="small" icon={<DeleteOutlined />}>
                 删除
-              </Button>
+              </DeleteButton>
             </Popconfirm>
           </CardMainHeaderOpt>
         </CardMainHeader>
@@ -291,15 +311,17 @@ const Card: React.FC<CardProps> = ({
             okText="确定"
             cancelText="取消"
           >
-            <Button type="text" size="small" danger icon={<DeleteOutlined />}>
+            <DeleteButton type="text" size="small" icon={<DeleteOutlined />}>
               删除
-            </Button>
+            </DeleteButton>
           </Popconfirm>
         </CardMainHeader>
       }
     >
       <Container
-        level={2}
+        level={level + 1}
+        pathPrefix={path}
+        maxLevel={maxLevel}
         newCards={data.children || []}
         moveCard={moveCard}
         deleteCard={deleteCard}

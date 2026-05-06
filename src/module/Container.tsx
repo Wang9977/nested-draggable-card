@@ -5,16 +5,20 @@ import { DragItem, HoverItem } from "./types";
 
 interface ContainerProps {
   level: number;
+  pathPrefix: number[];
+  maxLevel: number;
   newCards: CardData[];
   moveCard: (dragItem: DragItem, hoverItem: HoverItem) => void;
-  deleteCard: (data: CardData) => void;
-  convertToGroup: (data: CardData) => void;
-  changeOperator: (data: CardData, operator?: string) => void;
+  deleteCard: (path: number[]) => void;
+  convertToGroup: (path: number[]) => void;
+  changeOperator: (path: number[]) => void;
   isReadOnly: boolean;
 }
 
 const Container: React.FC<ContainerProps> = ({
   level,
+  pathPrefix,
+  maxLevel,
   newCards,
   moveCard,
   deleteCard,
@@ -29,6 +33,8 @@ const Container: React.FC<ContainerProps> = ({
         key={`${card.id}${i}`}
         data={card}
         level={level}
+        path={[...pathPrefix, i]}
+        maxLevel={maxLevel}
         idx={i}
         id={card.id}
         length={newCards?.length}
