@@ -61,7 +61,7 @@ export const useCardDrag = ({
     }),
   });
 
-  const [{ handlerId, isOver, canDrop: canDropState }, drop] = useDrop({
+  const [{ handlerId, isOverCurrent, canDrop: canDropState }, drop] = useDrop({
     accept: [ItemTypes.CARD, ItemTypes.GROUP],
     canDrop: (item: DragItem) => {
       if (item.id === id) return false;
@@ -94,11 +94,12 @@ export const useCardDrag = ({
     },
     collect: (monitor) => ({
       handlerId: monitor.getHandlerId(),
-      isOver: monitor.isOver(),
+      isOverCurrent: monitor.isOver({ shallow: true }),
       canDrop: monitor.canDrop(),
     }),
     hover: (item: DragItem, monitor) => {
       if (!monitor.canDrop()) return;
+      if (!monitor.isOver({ shallow: true })) return;
 
       const hoverBoundingRect = ref.current?.getBoundingClientRect();
       if (!hoverBoundingRect) return;
@@ -116,6 +117,7 @@ export const useCardDrag = ({
     },
     drop: (item, monitor) => {
       if (!monitor.canDrop()) return;
+      if (!monitor.isOver({ shallow: true })) return;
 
       item.isUpDrag = isInsertTop !== null ? isInsertTop : item.isUpDrag;
 
@@ -137,7 +139,7 @@ export const useCardDrag = ({
     dropRef: !isReadOnly ? drop : null,
     isDragging,
     isInsertTop,
-    isOver,
+    isOver: isOverCurrent,
     canDrop: canDropState || false,
     handlerId,
     isGroup,

@@ -98,11 +98,24 @@ const DragIcon = styled.div`
 const CardMainHeaderOpt = styled.div`
   display: flex;
   align-items: center;
+  gap: ${theme.spacing.xs};
 `;
 
 const CardMainDes = styled.div`
   color: ${theme.colors.text.secondary};
   font-size: ${theme.typography.fontSize.xs};
+`;
+
+const DeleteButton = styled(Button)`
+  && {
+    color: ${theme.colors.text.secondary};
+
+    &:hover,
+    &:focus {
+      color: #b45a5a;
+      background: rgba(180, 90, 90, 0.08);
+    }
+  }
 `;
 
 const InsertionLine = styled.div`
@@ -267,9 +280,9 @@ const Card: React.FC<CardProps> = ({
               okText="确定"
               cancelText="取消"
             >
-              <Button type="text" size="small" danger icon={<DeleteOutlined />}>
+              <DeleteButton type="text" size="small" icon={<DeleteOutlined />}>
                 删除
-              </Button>
+              </DeleteButton>
             </Popconfirm>
           </CardMainHeaderOpt>
         </CardMainHeader>
@@ -298,9 +311,9 @@ const Card: React.FC<CardProps> = ({
             okText="确定"
             cancelText="取消"
           >
-            <Button type="text" size="small" danger icon={<DeleteOutlined />}>
+            <DeleteButton type="text" size="small" icon={<DeleteOutlined />}>
               删除
-            </Button>
+            </DeleteButton>
           </Popconfirm>
         </CardMainHeader>
       }

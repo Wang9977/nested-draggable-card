@@ -61,7 +61,7 @@ const Canvas = styled.div`
   border: 1px solid ${theme.colors.gray300};
 `;
 
-const JsonBlock = styled.pre`
+const JsonBlock = styled.div`
   margin: 0;
   padding: ${theme.spacing.lg};
   border-radius: ${theme.borderRadius.lg};
@@ -70,20 +70,7 @@ const JsonBlock = styled.pre`
   overflow: auto;
   font-size: ${theme.typography.fontSize.xs};
   line-height: ${theme.typography.lineHeight.relaxed};
-`;
-
-const Summary = styled.div`
-  display: flex;
-  gap: ${theme.spacing.md};
-  margin-bottom: ${theme.spacing.lg};
-  flex-wrap: wrap;
-`;
-
-const SummaryItem = styled.div`
-  min-width: 120px;
-  padding: ${theme.spacing.md};
-  border-radius: ${theme.borderRadius.lg};
-  background: ${theme.colors.gray100};
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
 `;
 
 interface PlaygroundProps {
@@ -93,20 +80,153 @@ interface PlaygroundProps {
   setMaxLevel: React.Dispatch<React.SetStateAction<number>>;
 }
 
-const countNodes = (list: CardData[]): number =>
-  list.reduce(
-    (total, item) => total + 1 + (item.children?.length ? countNodes(item.children) : 0),
-    0
-  );
+const JsonRow = styled.div<{ $depth: number }>`
+  padding-left: ${({ $depth }) => $depth * 16}px;
+  white-space: pre;
+`;
 
-const countGroups = (list: CardData[]): number =>
-  list.reduce(
-    (total, item) =>
-      total +
-      (item.children ? 1 : 0) +
-      (item.children?.length ? countGroups(item.children) : 0),
-    0
+const Toggle = styled.summary`
+  list-style: none;
+  cursor: pointer;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+`;
+
+const JsonDetails = styled.details`
+  &[open] > summary .caret {
+    transform: rotate(90deg);
+  }
+`;
+
+const Caret = styled.span`
+  display: inline-block;
+  width: 12px;
+  color: ${theme.colors.text.secondary};
+  transition: transform 0.15s ease;
+`;
+
+const KeyText = styled.span`
+  color: #8c3fc9;
+`;
+
+const StringText = styled.span`
+  color: #1f7a45;
+`;
+
+const NumberText = styled.span`
+  color: #c25100;
+`;
+
+const BooleanText = styled.span`
+  color: #1677ff;
+`;
+
+const NullText = styled.span`
+  color: ${theme.colors.text.secondary};
+`;
+
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+const formatPrimitive = (value: JsonValue) => {
+  if (typeof value === "string") return <StringText>"{value}"</StringText>;
+  if (typeof value === "number") return <NumberText>{value}</NumberText>;
+  if (typeof value === "boolean") return <BooleanText>{String(value)}</BooleanText>;
+  return <NullText>null</NullText>;
+};
+
+const JsonNode: React.FC<{
+  value: JsonValue;
+  depth?: number;
+  label?: string;
+  isLast?: boolean;
+  defaultOpen?: boolean;
+}> = ({ value, depth = 0, label, isLast = true, defaultOpen = true }) => {
+  const suffix = isLast ? "" : ",";
+
+  if (value === null || typeof value !== "object") {
+    return (
+      <JsonRow $depth={depth}>
+        {label ? (
+          <>
+            <KeyText>"{label}"</KeyText>: {formatPrimitive(value)}
+            {suffix}
+          </>
+        ) : (
+          <>
+            {formatPrimitive(value)}
+            {suffix}
+          </>
+        )}
+      </JsonRow>
+    );
+  }
+
+  const isArray = Array.isArray(value);
+  const entries = isArray
+    ? value.map((item, index) => [String(index), item] as const)
+    : Object.entries(value);
+  const openBracket = isArray ? "[" : "{";
+  const closeBracket = isArray ? "]" : "}";
+  const preview = isArray
+    ? `Array(${value.length})`
+    : `${entries.length} key${entries.length === 1 ? "" : "s"}`;
+
+  if (!entries.length) {
+    return (
+      <JsonRow $depth={depth}>
+        {label ? (
+          <>
+            <KeyText>"{label}"</KeyText>: {openBracket}
+            {closeBracket}
+            {suffix}
+          </>
+        ) : (
+          <>
+            {openBracket}
+            {closeBracket}
+            {suffix}
+          </>
+        )}
+      </JsonRow>
+    );
+  }
+
+  return (
+    <JsonDetails open={defaultOpen}>
+      <Toggle>
+        <JsonRow $depth={depth}>
+          <Caret className="caret">▶</Caret>
+          {label ? <KeyText>"{label}"</KeyText> : null}
+          {label ? ": " : ""}
+          {openBracket}
+          <NullText> {preview}</NullText>
+        </JsonRow>
+      </Toggle>
+      {entries.map(([entryKey, entryValue], index) => (
+        <JsonNode
+          key={`${depth}-${entryKey}`}
+          value={entryValue}
+          depth={depth + 1}
+          label={isArray ? undefined : entryKey}
+          isLast={index === entries.length - 1}
+          defaultOpen={depth < 1}
+        />
+      ))}
+      <JsonRow $depth={depth}>
+        {closeBracket}
+        {suffix}
+      </JsonRow>
+    </JsonDetails>
   );
+};
 
 const Playground: React.FC<PlaygroundProps> = ({
   cards,
@@ -115,6 +235,7 @@ const Playground: React.FC<PlaygroundProps> = ({
   setMaxLevel,
 }) => {
   const id = useRef(cards.length);
+  const jsonValue = useMemo(() => cards as unknown as JsonValue, [cards]);
 
   const addCard = () => {
     id.current += 1;
@@ -127,15 +248,6 @@ const Playground: React.FC<PlaygroundProps> = ({
     };
     setCards((prev) => [...prev, newCard]);
   };
-
-  const summary = useMemo(
-    () => ({
-      totalNodes: countNodes(cards),
-      groupCount: countGroups(cards),
-      rootCount: cards.length,
-    }),
-    [cards]
-  );
 
   return (
     <Page>
@@ -174,29 +286,9 @@ const Playground: React.FC<PlaygroundProps> = ({
         </PanelCard>
         <PanelCard title="绑定数据">
           {cards.length ? (
-            <>
-              <Summary>
-                <SummaryItem>
-                  <Text type="secondary">根节点</Text>
-                  <Title level={4} style={{ margin: "4px 0 0" }}>
-                    {summary.rootCount}
-                  </Title>
-                </SummaryItem>
-                <SummaryItem>
-                  <Text type="secondary">全部节点</Text>
-                  <Title level={4} style={{ margin: "4px 0 0" }}>
-                    {summary.totalNodes}
-                  </Title>
-                </SummaryItem>
-                <SummaryItem>
-                  <Text type="secondary">条件组</Text>
-                  <Title level={4} style={{ margin: "4px 0 0" }}>
-                    {summary.groupCount}
-                  </Title>
-                </SummaryItem>
-              </Summary>
-              <JsonBlock>{JSON.stringify(cards, null, 2)}</JsonBlock>
-            </>
+            <JsonBlock>
+              <JsonNode value={jsonValue} />
+            </JsonBlock>
           ) : (
             <Empty description="左侧添加卡片后，这里会实时显示全部绑定数据" />
           )}
